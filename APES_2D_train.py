@@ -1,32 +1,19 @@
+import os
 import time
-import argparse
 import planning
+import utilities
+import numpy as np
 import torch.nn.functional
 import torch.optim as optim
 from torch.optim import Adam
 from collections import deque
+from mp2d.scripts.manipulator import manipulator
 from network_2d import APESCriticNet, APESGeneratorNet
 
-parser = argparse.ArgumentParser(description='APES Training Args')
-# parser.add_argument('oc', (解析后的名称)dest='occupancy grid', default=True, action='store_false')
-#  parser.add_argument('oc', default=True, action='store_false')
-parser.add_argument('start_v', default=True, action='store_false')
-parser.add_argument('goal_v', default=True, action='store_false')
-parser.add_argument('coefficients', default=True, action='store_false')
-# parser.add_argument('value_estimate', default=True, action='store_false')
-args = parser.parse_args()
-
-OC = planning.occ
-SV = args.start_v
-GV = args.goal_v
-W = args.coefficients
-VALUE_ESTIMATE = planning.PlanningResult
-step = 0
 REPLAY_MIN = 1000
 REPLAY_MAX = 10000
 SAVE_INTERVAL = 500
 REPLAY_SAMPLE_SIZE = 50
-
 start = time.time()
 recent_steps = []
 TARGET_ENTROPY = [-5.0]
@@ -35,11 +22,44 @@ LR = 1e-4
 LOG_ALPHA_MIN = -10.
 LOG_ALPHA_MAX = 20.
 
+dof = 2
+links = [0.5, 0.5]
+ma = manipulator(dof, links)
+pl = planning.Planning(ma)
+cwd = os.getcwd()
+easy_path = cwd + "/home/wangkaige/PycharmProjects/apes/mp2d/data/easy_pl_req_250_nodes.json "
+dataset = utilities.load_planning_req_dataset(easy_path)
+
+pl_req_file_name = "/home/wangkaige/PycharmProjects/apes/mp2d/data/easy_pl_req_250_nodes.json "
+planning_requests = utilities.load_planning_req_dataset(pl_req_file_name)
 replay_buffer = deque(maxlen=REPLAY_MAX)
-experience = (OC, SV, GV, W, VALUE_ESTIMATE)
-replay_buffer.append(experience)
 
 if __name__ == '__main__':
+    SV = np.array(2)
+    GV = np.array(2)
+    W = np.array(50)
+    pl_req = planning_requests[1]
+    req = dataset[1]
+    pl.visualize_request(req)
+    OC = np.array(np.shape(pl.get_occupancy_map(req)))
+
+    for i in range(0, REPLAY_MAX):
+        pl_req = planning_requests[i]
+        SV = pl_req.start
+        SV = torch.tensor(SV)
+        GV = pl_req.goal
+        GV = torch.tensor(GV)
+        req = dataset[i]
+        pl.visualize_request(req)
+        OC = pl.get_occupancy_map(req)
+        pl.visualize_occupancy_map(req, OC)
+        pl.generate_graph_halton(150)
+        pr = pl.search(req)
+        VALUE_ESTIMATE = pr.checked_counts
+        W = APESGeneratorNet(OC, SV, GV)
+        experience = (OC, SV, GV, W, VALUE_ESTIMATE)
+        replay_buffer.append(experience)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     gen_model = APESGeneratorNet(OC, SV, GV).float().to(device)
     critic_model = APESCriticNet(OC, SV, GV, W).float().to(device)
@@ -93,4 +113,8 @@ if __name__ == '__main__':
                                ((-log_alpha.grad < 0) | (log_alpha <= LOG_ALPHA_MAX))).float()  # ppo
         alpha_optim.step()
 
-#  2d input run or not , git
+        print("critic loss:", critic_loss)
+        print("generator loss:", gen_objective)
+        print("Alpha loss:", alpha_loss)
+
+    #  2d input run or not , git, visual

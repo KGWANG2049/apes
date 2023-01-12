@@ -4,6 +4,7 @@ import math
 import torch.nn as nn
 import numpy as np
 
+
 # def LeakyReLU(x, x_max=1, hard_slope=1e-2):
 # return (x <= x_max) * x + (x > x_max) * (x_max + hard_slope * (x - x_max))
 

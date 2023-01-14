@@ -1,109 +1,95 @@
 # CRITIC NETWORK
 import torch
-import math
 import torch.nn as nn
 import numpy as np
-
-
 # def LeakyReLU(x, x_max=1, hard_slope=1e-2):
 # return (x <= x_max) * x + (x > x_max) * (x_max + hard_slope * (x - x_max))
 
-class APESCriticNet(nn.Module):
-    def __init__(self, oc, start_v, goal_v, coefficients):
-        super(APESCriticNet, self).__init__()
-        self.oc = oc
-        self.start_v = start_v
-        self.goal_v = goal_v
-        self.coefficients = coefficients
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=(3, 3), stride=2, padding=0)
-        self.mp = torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2, padding=0)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=(3, 3), stride=2, padding=0)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=(3, 3), stride=2, padding=0)
 
-        self.fc1 = nn.Linear(1728, 512)  # 1728改1728+start+goal+50
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, 512)
-        self.fc4 = nn.Linear(512, 2)
+class APESCriticNet(nn.Module):
+    def __init__(self):
+        super(APESCriticNet, self).__init__()
+        self.mp = torch.nn.MaxPool2d(kernel_size=3, stride=2)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.conv2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
+        self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.ReLU = torch.nn.ReLU()
+        self.fc1 = nn.Linear(395, 10)  # 1728改为1728+start+goal
+        self.fc2 = nn.Linear(10, 10)
+        self.fc3 = nn.Linear(10, 10)
+        self.fc4 = nn.Linear(10, 2)
 
     def forward(self, x, s, g, coefficients):
         # x = x.reshape((x.shape[0], -1, self.particle_size))
-        self.conv1(self.oc)
-        x = torch.nn.LeakyReLU(x)
+        x = self.conv1(x)
+        x = self.ReLU(x)
         x = self.mp(x)
 
         x = self.conv2(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.mp(x)
 
         x = self.conv3(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.mp(x)
-
         x = torch.flatten(x)
-        x = torch.cat(
-            ([x] if self.oc else [])
-            + ([s] if self.start_v else [])
-            + [g] if self.goal_v else []
-            + [coefficients] if self.coefficients else [])
+        s = torch.flatten(s)
+        g = torch.flatten(g)
+        coefficients = torch.flatten(coefficients)
+        x = torch.cat((x, s, g, coefficients), 0)
         x = self.fc1(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.fc2(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.fc3(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.fc4(x)
-        x = x.cpu()
-        x = x.detach()
-        x = x.numpy().tolist
+        #x = x.cpu()
+       # x = x.detach()
+       # x = x.numpy().tolist
 
-        return [x]
+        return x
 
 
 # GENERATOR NETWORK
 class APESGeneratorNet(nn.Module):
-    def __init__(self, oc, start_v, goal_v):
+    def __init__(self):
         super(APESGeneratorNet, self).__init__()
-        self.oc = oc
-        self.start_v = start_v
-        self.goal_v = goal_v
-        self.mp = torch.nn.MaxPool2d(kernel_size=(2, 2), stride=2, padding=(0, 0, 0))
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=(3, 3), stride=2, padding=0)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=(3, 3), stride=2, padding=0)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=(3, 3), stride=2, padding=0)
-
-        self.fc1 = nn.Linear(1728, 512)  # 1728改为1728+start+goal
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, 512)
-        self.fc4 = nn.Linear(512, 50)
+        self.mp = torch.nn.MaxPool2d(kernel_size=3, stride=2)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.conv2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
+        self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.ReLU = torch.nn.ReLU()
+        self.fc1 = nn.Linear(29, 10)  # 1728改为1728+start+goal
+        self.fc2 = nn.Linear(10, 10)
+        self.fc3 = nn.Linear(10, 10)
+        self.fc4 = nn.Linear(10, 5)
 
     def forward(self, x, s, g):
-        self.conv1(self.oc)
-        x = torch.nn.LeakyReLU(x)
+        x = self.conv1(x)
+        x = self.ReLU(x)
         x = self.mp(x)
-
         x = self.conv2(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.mp(x)
-
         x = self.conv3(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.mp(x)
-
         x = torch.flatten(x)
-        x = torch.cat(
-            ([x] if self.oc else [])
-            + ([s] if self.start_v else [])
-            + [g] if self.goal_v else [])
+        s = torch.flatten(s)
+        g = torch.flatten(g)
+        x = torch.cat((x, s, g), 0)
         x = self.fc1(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.fc2(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.fc3(x)
-        x = torch.nn.LeakyReLU(x)
+        x = self.ReLU(x)
         x = self.fc4(x)
-        x = math.exp(x)
-
-        return np.random.dirichlet([x], size=50)
+        x = torch.exp(x)
+        x = x.clone().detach().cpu().numpy()
+        print(x)
+        return np.random.dirichlet(x, size=10)
 
     def sample(self, x, s, g):
         coefficients_dist = self.forward(x, s, g)

@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     SV = np.array(2)
     GV = np.array(2)
-    W = np.array(50)
+    W = np.array(5)
     data = np.array([])
 
     pl_req = planning_requests[1]
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         # print("Original shape:", VALUE_ESTIMATE.shape)
         W = gen_model(OC, SV, GV)
         W = torch.tensor(W)
-        # print("distribution weight:", W)
+        print("distribution weight:", W)
         # print("Original shape:", W.shape)
         experience = ([OC, SV, GV, W, VALUE_ESTIMATE])
         replay_buffer.append(experience)

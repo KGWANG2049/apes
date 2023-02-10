@@ -91,11 +91,11 @@ class APESGeneratorNet(nn.Module):
         x = torch.exp(x)
         x = x.clone().detach().cpu().numpy()
         print(x)
-        return np.random.dirichlet(x, size=10)
+        return np.random.dirichlet(x, size=1)
 
-    def sample(self, x, s, g):
-        coefficients_dist = self.forward(x, s, g)
-        coefficients_rs = coefficients_dist.rsample()
-        coefficients_entropy = -coefficients_dist.prob(coefficients_rs) * coefficients_dist.log_prob(coefficients_rs)
+    # def sample(self, x, s, g):
+    # coefficients_dist = self.forward(x, s, g)
+    # coefficients_rs = coefficients_dist.rsample()
+    # coefficients_entropy = -coefficients_dist.prob(coefficients_rs) * coefficients_dist.log_prob(coefficients_rs)
 
-        return coefficients_entropy
+    # return coefficients_entropy

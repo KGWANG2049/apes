@@ -14,15 +14,15 @@ from mp2d.scripts.manipulator import manipulator
 from apes.network_2d import APESCriticNet, APESGeneratorNet
 from mp2d.scripts.utilities import load_planning_req_dataset
 
-REPLAY_MIN = 100
-REPLAY_MAX = 100
+REPLAY_MAX = 500
+REPLAY_SAMPLE_SIZE = 32
+TRAIN_T = 15
 SAVE_INTERVAL = 50
-REPLAY_SAMPLE_SIZE = 5
 start = time.time()
 recent_steps = []
-TARGET_ENTROPY = [-250.0]
-LOG_ALPHA_INIT = [-50.0]
-LR = 5e-5
+TARGET_ENTROPY = [-20.0]
+LOG_ALPHA_INIT = [0.0]
+LR = 1e-2
 LOG_ALPHA_MIN = -10.
 LOG_ALPHA_MAX = 20.
 cwd = os.getcwd()
@@ -42,7 +42,6 @@ if __name__ == '__main__':
     GV = np.array(2)
     W = np.array(50)
     data = np.array([])
-
     pl_req = planning_requests[1]
     req = dataset[1]
     OC = np.array(np.shape(pl.get_occupancy_map(req)))
@@ -56,6 +55,7 @@ if __name__ == '__main__':
     log_alpha = torch.tensor(LOG_ALPHA_INIT, requires_grad=True, device=device)
     alpha_optim = optim.Adam([log_alpha], lr=LR)
     writer = SummaryWriter("LOSS_FUNCTION")
+    a = torch.tensor(0.03)
 
     for i in range(0, REPLAY_MAX):
         pl_req = planning_requests[i]
@@ -77,45 +77,46 @@ if __name__ == '__main__':
         pr = pl.search(req)
         VALUE_ESTIMATE = pr.checked_counts
         VALUE_ESTIMATE = torch.tensor(VALUE_ESTIMATE)
-        print(VALUE_ESTIMATE)
+        # print(VALUE_ESTIMATE)
         # print("total iterations:", VALUE_ESTIMATE)
         # print("Original shape:", VALUE_ESTIMATE.shape)
         W = gen_model(OC, SV, GV)
         W = torch.tensor(W)
-        print("distribution weight:", W)
+        # print("distribution weight:", W)
         # print("Original shape:", W.shape)
         experience = ([OC, SV, GV, W, VALUE_ESTIMATE])
         replay_buffer.append(experience)
-        print('Waiting for minimum buffer size ... {}/{}'.format(len(replay_buffer), REPLAY_MIN))
+        print('Waiting for buffer size ... {}/{}'.format(len(replay_buffer), REPLAY_MAX))
 
-    for i in range(60):
+    for i in range(TRAIN_T):
         # labels = sampled_oc, sampled_start_v, sampled_goal_v, sampled_coefficients, sampled_values
         sampled_evaluations = random.sample(replay_buffer, REPLAY_SAMPLE_SIZE)
         # data_labels = {sampled_evaluations[i]: labels[i] for i in range(len(sampled_evaluations))}
         sampled_oc = torch.stack([t[0] for t in sampled_evaluations])
-        # print("OC:", sampled_oc.shape)
+        # print("OC:", sampled_oc, sampled_oc.shape)
         sampled_start_v = torch.stack([t[1] for t in sampled_evaluations])
-        # print("start_v:", sampled_start_v.shape)
+        # print("start_v:", sampled_start_v, sampled_start_v.shape)
         sampled_goal_v = torch.stack([t[2] for t in sampled_evaluations])
-        # print("goal_v:", sampled_goal_v.shape)
+        # print("goal_v:", sampled_goal_v, sampled_goal_v.shape)
         sampled_coefficients = torch.stack([t[3] for t in sampled_evaluations])
-        # print("sampled_coefficient:", sampled_coefficients.shape)
+        # print("sampled_coefficient:", sampled_coefficients, sampled_coefficients.shape)
         sampled_values = torch.stack([t[4] for t in sampled_evaluations])
-        # print("value:", sampled_values.shape)
+        # print("value:", sampled_values, sampled_values.shape)
 
         # update Cir
-        (mean, std) = critic_model(sampled_oc, sampled_start_v, sampled_goal_v, sampled_coefficients)
-        std = torch.exp(std)
-        # print("mean:", mean, "std:", std)
-        priori_pro = dist.Normal(mean, std)
-        # print("posterior:", priori_pro)
-        posterior_prob = priori_pro.log_prob(sampled_values)
-        # print(sampled_values)
-        print("posterior_prob:", posterior_prob)
-        # posterior_prob = torch.exp(posterior_prob)
-        # print("gai_lv;", posterior_prob)
-        critic_loss = torch.sum(-posterior_prob)
-        print("critic_loss", critic_loss)
+        critic_loss = 0
+
+        for j in range(REPLAY_SAMPLE_SIZE):
+            (mean, std) = critic_model(sampled_oc[j], sampled_start_v[j], sampled_goal_v[j], sampled_coefficients[j])
+            std = torch.exp(std)
+            # print("mean:", mean, "std:", std)
+            priori_pro = dist.Normal(mean, std)
+            # print("posterior:", priori_pro)
+            posterior_prob = priori_pro.log_prob(sampled_values[j])
+            # print("posterior_prob:", posterior_prob)
+            # print("test", priori_pro.log_prob(a).exp())
+            critic_loss = critic_loss + (-posterior_prob)
+        # print("critic_loss", critic_loss)
         critic_model_optimizer.zero_grad()
         gen_model_optimizer.zero_grad()
         critic_loss.backward()
@@ -123,24 +124,37 @@ if __name__ == '__main__':
         critic_model_optimizer.step()
 
         # Update generator
-        mean = critic_model(sampled_oc, sampled_start_v, sampled_goal_v, sampled_coefficients)[0]
-        dir_dist = Dirichlet(sampled_coefficients)
-        # print("dirichlet sample:", coefficients_rs, "sample shape:", coefficients_rs.shape)
-        entropy = dir_dist.entropy()
+        gen_objective = 0
+        for j in range(REPLAY_SAMPLE_SIZE):
+            mean = critic_model(sampled_oc[j], sampled_start_v[j], sampled_goal_v[j], sampled_coefficients[j])[0]
+            # print("mean_gen", mean)
+            dir_dist = Dirichlet(sampled_coefficients[j])
+            entropy = dir_dist.entropy()
+            # print("entropy", entropy)
+            dual_terms = (log_alpha.exp().detach() * entropy)
+            # print("dual_term", dual_terms)
+            gen_objective = gen_objective + (mean - dual_terms)
+            # print("gen_objective", gen_objective)
+        # print("gen_objectivesum", gen_objective)
         critic_model_optimizer.zero_grad()
         gen_model_optimizer.zero_grad()
-        dual_terms = (log_alpha.exp().detach() * entropy)
-        gen_objective = torch.sum(mean - dual_terms)
         gen_objective.backward()
         torch.nn.utils.clip_grad_norm_(gen_model.parameters(), 1.0)
         gen_model_optimizer.step()
 
         # update alpha
+        alpha_loss = 0
+        for j in range(REPLAY_SAMPLE_SIZE):
+            dir_dist = Dirichlet(sampled_coefficients[j])
+            entropy = dir_dist.entropy()
+
+            alpha_loss_single = log_alpha.exp() * ((entropy - torch.tensor(
+                TARGET_ENTROPY, device=device, dtype=torch.float32)).detach())
+            #  print("1", alpha_loss_single)
+            alpha_loss = alpha_loss + alpha_loss_single
+        # print("2", alpha_loss)
+        # print("3", alpha_loss)
         alpha_optim.zero_grad()
-        alpha_loss = log_alpha * ((entropy - torch.tensor(
-            TARGET_ENTROPY, device=device, dtype=torch.float32)).detach())
-        alpha_loss = torch.sum(alpha_loss)
-        # alpha_ar = alpha_loss.append(alpha_loss)
         alpha_loss.backward()
         with torch.no_grad():
             log_alpha.grad *= (((-log_alpha.grad >= 0) | (log_alpha >= LOG_ALPHA_MIN)) &

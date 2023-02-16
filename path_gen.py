@@ -1,3 +1,4 @@
+
 import torch
 from copy import deepcopy
 import torch.distributions as td
@@ -34,7 +35,7 @@ dataset = load_planning_req_dataset(easy_path)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-pl_req = planning_requests[431]
+pl_req = planning_requests[461]
 SV = pl_req.start
 SV = torch.tensor(SV)
 GV = pl_req.goal
@@ -87,5 +88,3 @@ ax.scatter(req.start[0], req.start[1], color="green", s=60)
 ax.scatter(req.goal[0], req.goal[1], color="blue", s=60)
 ax.scatter(pl.visualize_obstacle_space(req)[0], pl.visualize_obstacle_space(req)[1], c="r", s=1)
 plt.show()
-
-

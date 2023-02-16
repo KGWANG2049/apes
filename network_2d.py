@@ -12,14 +12,14 @@ class APESCriticNet(nn.Module):
     def __init__(self):
         super(APESCriticNet, self).__init__()
         self.mp = torch.nn.MaxPool2d(kernel_size=3, stride=2)
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.conv2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
-        self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.ReLU = torch.nn.ReLU()
-        self.fc1 = nn.Linear(395, 10)  # 1728改为1728+start+goal
-        self.fc2 = nn.Linear(10, 10)
-        self.fc3 = nn.Linear(10, 10)
-        self.fc4 = nn.Linear(10, 2)
+        self.fc1 = nn.Linear(630, 300)  # 1728改为1728+start+goal
+        self.fc2 = nn.Linear(300, 300)
+        self.fc3 = nn.Linear(300, 300)
+        self.fc4 = nn.Linear(300, 2)
 
     def forward(self, x, s, g, coefficients):
         # x = x.reshape((x.shape[0], -1, self.particle_size))
@@ -58,14 +58,14 @@ class APESGeneratorNet(nn.Module):
     def __init__(self):
         super(APESGeneratorNet, self).__init__()
         self.mp = torch.nn.MaxPool2d(kernel_size=3, stride=2)
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.conv2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
-        self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=2, padding=0)
+        self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.ReLU = torch.nn.ReLU()
-        self.fc1 = nn.Linear(29, 10)  # 1728改为1728+start+goal
-        self.fc2 = nn.Linear(10, 10)
-        self.fc3 = nn.Linear(10, 10)
-        self.fc4 = nn.Linear(10, 5)
+        self.fc1 = nn.Linear(580, 300)  # 1728改为1728+start+goal
+        self.fc2 = nn.Linear(300, 300)
+        self.fc3 = nn.Linear(300, 300)
+        self.fc4 = nn.Linear(300, 50)
 
     def forward(self, x, s, g):
         x = self.conv1(x)

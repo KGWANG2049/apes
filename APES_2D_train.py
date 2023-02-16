@@ -14,15 +14,15 @@ from mp2d.scripts.manipulator import manipulator
 from apes.network_2d import APESCriticNet, APESGeneratorNet
 from mp2d.scripts.utilities import load_planning_req_dataset
 
-REPLAY_MAX = 500
-REPLAY_SAMPLE_SIZE = 32
-TRAIN_T = 15
+REPLAY_MAX = 10
+REPLAY_SAMPLE_SIZE = 2
+TRAIN_T = 4
 SAVE_INTERVAL = 50
 start = time.time()
 recent_steps = []
 TARGET_ENTROPY = [-20.0]
 LOG_ALPHA_INIT = [0.0]
-LR = 1e-2
+LR = 1e-3
 LOG_ALPHA_MIN = -10.
 LOG_ALPHA_MAX = 20.
 cwd = os.getcwd()

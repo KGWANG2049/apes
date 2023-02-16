@@ -42,7 +42,7 @@ def plan_with_rrt_connect(pl_req, ):
 for i in range(50):
     pl_req_file_name = "/home/wangkaige/Project/apes/easy_pl_req_250_nodes.json"
     planning_requests = load_planning_req_dataset(pl_req_file_name)
-    pl_req = planning_requests[i+530]
+    pl_req = planning_requests[i+300]
     path = plan_with_rrt_connect(pl_req)
     solution = np.array(path.solution_path)
     solution = torch.tensor(solution)
@@ -60,4 +60,7 @@ print(mean.shape)
 
 torch.save(fixed_path_idx, "fixed_path_new")
 torch.save(mean, "mean_new")
+
+
+
 

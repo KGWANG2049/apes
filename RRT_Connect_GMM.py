@@ -19,34 +19,42 @@ except ImportError:
     from ompl import geometric as og
 from time import sleep
 from math import fabs
-from path_gen import gmm_dist
+from path_gen import *
 import torch
 from mp2d.scripts.manipulator import *
 from mp2d.scripts.planning import *
-
-pl_req_file_name = "/home/wangkaige/Project/apes/easy_pl_req_250_nodes.json"
-planning_requests = load_planning_req_dataset(pl_req_file_name)
-pl_req = planning_requests[666]
-req = pl_req
-dof = 2
-links = [0.5, 0.5]
-planning_range_max = np.array([np.pi, np.pi])
-planning_range_min = np.array([-np.pi, -np.pi])
-ma = manipulator(dof, links)
-pl_env = Planning(ma, planning_range_max, planning_range_min, resolution=0.05)
 
 
 class MyValidStateSampler(ob.ValidStateSampler):
 
     def __init__(self, si):
         super(MyValidStateSampler, self).__init__(si)
-        self.name_ = "my sampler"
+        self.name_ = "aaa"
+        self.gmm = gmm_dist
+        self.count = 0
 
     def sample(self, state):
-        p = gmm_dist.sample(pl_req)
+        p = self.gmm.sample()
+        p = p.cpu().numpy()
         state[0] = p[0]
         state[1] = p[1]
+        self.count += 1
+        print("self.count", self.count)
         return True
+
+    def sampleUniform(self, state):
+        p = self.gmm.sample()
+        p = p.cpu().numpy()
+        state[0] = p[0]
+        state[1] = p[1]
+        self.count += 1
+        print("self.count", self.count)
+        return True
+
+    # def reset_counts(self):
+    # self.count = 0
+    def __call__(self, _):
+        return self
 
 
 # This function is needed, even when we can write a sampler like the one
@@ -56,18 +64,6 @@ def isStateValid(state):
     obstacles = pl_req.obstacles
     is_valid = pl_env.manipulator.check_validity(state, obstacles)
     return is_valid
-
-    # Let's pretend that the validity check is computationally relatively
-    # expensive to emphasize the benefit of explicitly generating valid
-    # samples
-    # Valid states satisfy the following constraints:
-    # -1<= x,y,z <=1
-    # if .25 <= z <= .5, then |x|>.8 and |y|>.8
-
-
-# return an instance of my sampler
-def allocMyValidStateSampler(si):
-    return MyValidStateSampler(si)
 
 
 def plan():
@@ -101,20 +97,22 @@ def plan():
 
     # set sampler (optional; the default is uniform sampling)
     si = ss.getSpaceInformation()
+    sampler = MyValidStateSampler(si)
 
     # use my sampler
-    si.setValidStateSamplerAllocator(ob.ValidStateSamplerAllocator(allocMyValidStateSampler))
+    si.setValidStateSamplerAllocator(ob.ValidStateSamplerAllocator(sampler))
 
     # create a planner for the defined space
     planner = og.RRTConnect(si)
     ss.setPlanner(planner)
 
-    # attempt to solve the problem within ten seconds of planning time
+    # attempt to solve the problem within 20 seconds of planning time
     solved = ss.solve(20.0)
     solution_path = ss.getSolutionPath()
 
     ompl_solution = list(solution_path.getStates())
     solution = []
+
     for state in ompl_solution:
         np_state = np.zeros(2)
         np_state[0] = state[0]
@@ -124,22 +122,26 @@ def plan():
     if solved:
         print("Found solution:")
         # print the path to screen
-
         print(ss.getSolutionPath())
         print(solution)
+        _, ax = plt.subplots(1, 1)
+        ax.scatter(samples[:, 0], samples[:, 1], s=1)
+        px = [node[0] for node in mean]
+        py = [node[1] for node in mean]
+        ax.scatter(px, py, color="red", s=10)
+        ax.scatter(req.start[0], req.start[1], color="green", s=60)
+        ax.scatter(req.goal[0], req.goal[1], color="blue", s=60)
+        obstacles_space = pl.get_obstacle_space(req)
+        obst_space_x = [ns[0] for ns in obstacles_space]
+        obst_space_y = [ns[1] for ns in obstacles_space]
+        ax.scatter(obst_space_x, obst_space_y, c="r", s=1)
         x = [ns[0] for ns in solution]
         y = [ns[1] for ns in solution]
         plt.plot(x, y)
-        plt.title('vaild_path')
         plt.show()
-
-
-
-
     else:
         print("No solution found")
 
 
 if __name__ == '__main__':
-    print("\nUsing my sampler:")
     plan()

@@ -120,7 +120,7 @@ def plan(pl_req, gmm_dist):
         # print the path to screen
         print(ss.getSolutionPath())
         print(solution)
-        _, ax = plt.subplots(1, 1)
+        """_, ax = plt.subplots(1, 1)
         ax.scatter(pl_req.start[0], pl_req.start[1], color="green", s=60)
         ax.scatter(pl_req.goal[0], pl_req.goal[1], color="blue", s=60)
         obstacles_space = pl.get_obstacle_space(pl_req)
@@ -130,11 +130,7 @@ def plan(pl_req, gmm_dist):
         x = [ns[0] for ns in solution]
         y = [ns[1] for ns in solution]
         plt.plot(x, y)
-        plt.show()
+        plt.show()"""
     else:
         print("No solution found")
 
-
-if __name__ == '__main__':
-    # need to input pl_req and gmm_dist. can get these in APES_2D_train
-    plan()

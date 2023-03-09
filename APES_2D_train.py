@@ -1,82 +1,99 @@
 import os
-import random
 import time
+import random
+import matplotlib.pyplot as plt
 import numpy as np
-import torch.distributions as dist
 import torch.nn.functional
 import torch.optim as optim
+from torch.distributions import Dirichlet
 from torch.optim import Adam
 from collections import deque
+import torch.distributions as dist
 from tensorboardX import SummaryWriter
-from torch.distributions import Dirichlet
 from mp2d.scripts.planning import Planning
+from apes.Dist_gen import gmm_dist_generator
 from mp2d.scripts.manipulator import manipulator
 from apes.network_2d import APESCriticNet, APESGeneratorNet
 from mp2d.scripts.utilities import load_planning_req_dataset
+from experience import plan
+from Rand_RRTCocnnect import random_plan
+from datetime import datetime
 
-REPLAY_MAX = 4000
-REPLAY_SAMPLE_SIZE = 32
-TRAIN_T = 100
-SAVE_INTERVAL = 50
-start = time.time()
-recent_steps = []
-TARGET_ENTROPY = [-20.0]
-LOG_ALPHA_INIT = [0.0]
-LR = 1e-3
+BUFFER_MAX = 8
+REPLAY_SAMPLE_SIZE = 8
+EPOCH = 10
+LR_cri = 1e-4
+LR_gen = 1e-4
+TARGET_ENTROPY = [-4.0]
+LOG_ALPHA_INIT = [-1.0]
 LOG_ALPHA_MIN = -10.
 LOG_ALPHA_MAX = 20.
-cwd = os.getcwd()
-easy_path = "/home/wang_ujsjo/Praktikum/apes/easy_pl_req_250_nodes.json"
-dataset = load_planning_req_dataset(easy_path)
+RAN_VALUE_LIST = []
+VALUE_ESTIMATE_LIST = []
 dof = 2
 links = [0.5, 0.5]
 ma = manipulator(dof, links)
 pl = Planning(ma)
 pl_req_file_name = "/home/wang_ujsjo/Praktikum/apes/easy_pl_req_250_nodes.json"
 planning_requests = load_planning_req_dataset(pl_req_file_name)
-replay_buffer = deque(maxlen=REPLAY_MAX)
+replay_buffer = deque(maxlen=BUFFER_MAX)
 writer = SummaryWriter()
+
 if __name__ == '__main__':
 
     SV = np.array(2)
     GV = np.array(2)
-    W = np.array(50)
+    W = np.array(10)
     data = np.array([])
-    pl_req = planning_requests[1]
-    req = dataset[1]
-    OC = np.array(np.shape(pl.get_occupancy_map(req)))
+    OC = np.array(np.shape(pl.get_occupancy_map(planning_requests[1])))
     device = torch.device("cuda:0")
     gen_model = APESGeneratorNet().double().to(device)
     gen_model.eval()
     critic_model = APESCriticNet().double().to(device)
     critic_model.eval()
-    gen_model_optimizer = optim.Adam(gen_model.parameters(), lr=LR)
-    critic_model_optimizer: Adam = optim.Adam(critic_model.parameters(), lr=LR)
+    gen_model_optimizer = optim.Adam(gen_model.parameters(), lr=LR_gen)
+    critic_model_optimizer: Adam = optim.Adam(critic_model.parameters(), lr=LR_cri)
     log_alpha = torch.tensor(LOG_ALPHA_INIT, requires_grad=True, device=device)
-    alpha_optim = optim.Adam([log_alpha], lr=LR)
-    writer = SummaryWriter("LOSS_FUNCTION")
-    a = torch.tensor(0.03)
+    alpha_optim = optim.Adam([log_alpha], lr=LR_gen)
+    writer = SummaryWriter("Loss_Function".format(datetime.now()))
 
-    for i in range(0, REPLAY_MAX):
-        req = dataset[i]
-        OC = pl.get_occupancy_map(req)
-        OC = OC.reshape([1, OC.shape[0], -1])
-        pl_req = planning_requests[i]
-        SV = pl_req.start
-        GV = pl_req.goal
-        pl.generate_graph_halton(150)
-        pr = pl.search(req)
-        VALUE_ESTIMATE = pr.checked_counts
-        VALUE_ESTIMATE = torch.tensor(VALUE_ESTIMATE).to(device)
-        OC = torch.tensor(OC).to(device)
-        SV = torch.tensor(SV).to(device)
-        GV = torch.tensor(GV).to(device)
-        W = torch.tensor(gen_model(OC, SV, GV)).to(device)
-        experience = ([OC, SV, GV, W, VALUE_ESTIMATE])
-        replay_buffer.append(experience)
-        print('Waiting for buffer size ... {}/{}'.format(len(replay_buffer), REPLAY_MAX))
+    for p in range(EPOCH):
+        replay_buffer.clear()
+        VALUE_RAN_SUM = 0
+        VALUE_ESTIMATE_SUM = 0
+        for i in range(0, BUFFER_MAX):
+            ran_idx = torch.randint(low=0, high=4000, size=(1,))
+            pl_req = planning_requests[i + ran_idx]
+            OC = pl.get_occupancy_map(pl_req)
+            OC = OC.reshape([1, OC.shape[0], -1])
+            SV = pl_req.start
+            GV = pl_req.goal
+            pl.generate_graph_halton(150)
+            pr = pl.search(pl_req)
+            # VALUE_ESTIMATE = pr.checked_counts
+            # VALUE_ESTIMATE = torch.tensor(VALUE_ESTIMATE)
+            OC = torch.tensor(OC).to(device)
+            SV = torch.tensor(SV).to(device)
+            GV = torch.tensor(GV).to(device)
+            W = gen_model(OC, SV, GV).rsample().to(device)
+            # print("W", W, W.shape)
+            gmm_dist = gmm_dist_generator(W)
+            VALUE_ESTIMATE = plan(pl_req, gmm_dist)[0]
+            VALUE_ESTIMATE = torch.tensor(VALUE_ESTIMATE).to(device)
+            # print("GMM maxcount", VALUE_ESTIMATE)
+            experience = ([OC, SV, GV, W, VALUE_ESTIMATE])
+            replay_buffer.append(experience)
+            VALUE_RAN = random_plan(pl_req)
+            VALUE_RAN_SUM = VALUE_RAN + VALUE_RAN_SUM
+            VALUE_ESTIMATE_SUM = VALUE_ESTIMATE.cpu() + VALUE_ESTIMATE_SUM
+            # del MVS, RVS
+            print('Current Batch', p + 1, "/", EPOCH,
+                  'Waiting for buffer size ... {}/{}'.format(len(replay_buffer), BUFFER_MAX))
+            print("value ran", VALUE_RAN_SUM, "value gmm", VALUE_ESTIMATE_SUM)
 
-    for i in range(TRAIN_T):
+        RAN_VALUE_LIST.append(VALUE_RAN_SUM)
+        VALUE_ESTIMATE_LIST.append(VALUE_ESTIMATE_SUM)
+
         # labels = sampled_oc, sampled_start_v, sampled_goal_v, sampled_coefficients, sampled_values
         sampled_evaluations = random.sample(replay_buffer, REPLAY_SAMPLE_SIZE)
         # data_labels = {sampled_evaluations[i]: labels[i] for i in range(len(sampled_evaluations))}
@@ -95,7 +112,7 @@ if __name__ == '__main__':
         critic_loss = 0
 
         for j in range(REPLAY_SAMPLE_SIZE):
-            (mean, std) = critic_model(sampled_oc[j], sampled_start_v[j], sampled_goal_v[j], sampled_coefficients[j])
+            mean, std = critic_model(sampled_oc[j], sampled_start_v[j], sampled_goal_v[j], sampled_coefficients[j])
             std = torch.exp(std)
             # print("mean:", mean, "std:", std)
             priori_pro = dist.Normal(mean, std)
@@ -103,39 +120,42 @@ if __name__ == '__main__':
             posterior_prob = priori_pro.log_prob(sampled_values[j])
             # print("posterior_prob:", posterior_prob)
             # print("test", priori_pro.log_prob(a).exp())
-            critic_loss = critic_loss + (-posterior_prob)
-        # print("critic_loss", critic_loss)
+            critic_loss = (critic_loss + (-posterior_prob))/REPLAY_SAMPLE_SIZE
+
         critic_model_optimizer.zero_grad()
-        gen_model_optimizer.zero_grad()
-        critic_loss.backward()
+        critic_loss.backward(retain_graph=True)
         torch.nn.utils.clip_grad_norm_(critic_model.parameters(), 1.0)
         critic_model_optimizer.step()
 
         # Update generator
         gen_objective = 0
-        for j in range(REPLAY_SAMPLE_SIZE):
-            mean = critic_model(sampled_oc[j], sampled_start_v[j], sampled_goal_v[j], sampled_coefficients[j])[0]
-            # print("mean_gen", mean)
-            dir_dist = Dirichlet(sampled_coefficients[j])
-            entropy = dir_dist.entropy()
+        for k in range(REPLAY_SAMPLE_SIZE):
+            mean = critic_model(sampled_oc[k], sampled_start_v[k], sampled_goal_v[k], sampled_coefficients[k])[0]
+            # print("mean", mean)
+            # dir_dist = Dirichlet(sampled_coefficients[k])
+            entropy = gen_model(sampled_oc[k], sampled_start_v[k], sampled_goal_v[k]).entropy()
             # print("entropy", entropy)
             dual_terms = (log_alpha.exp().detach() * entropy)
             # print("dual_term", dual_terms)
-            gen_objective = gen_objective + (mean - dual_terms)
-            # print("gen_objective", gen_objective)
+            gen_objective = gen_objective + mean - dual_terms
+            # gen_objective = gen_objective + mean
+
         # print("gen_objectivesum", gen_objective)
-        critic_model_optimizer.zero_grad()
+        # critic_model_optimizer.zero_grad()
+        # gen_model_optimizer.zero_grad()
         gen_model_optimizer.zero_grad()
         gen_objective.backward()
         torch.nn.utils.clip_grad_norm_(gen_model.parameters(), 1.0)
         gen_model_optimizer.step()
+        print("critic_loss", critic_loss)
+        print("gen_objective", gen_objective)
 
         # update alpha
         alpha_loss = 0
         for j in range(REPLAY_SAMPLE_SIZE):
-            dir_dist = Dirichlet(sampled_coefficients[j])
-            entropy = dir_dist.entropy()
-
+            # dir_dist = Dirichlet(sampled_coefficients[j])
+            entropy = gen_model(sampled_oc[j], sampled_start_v[j], sampled_goal_v[j]).entropy()
+            print("entropy", entropy)
             alpha_loss_single = log_alpha.exp() * ((entropy - torch.tensor(
                 TARGET_ENTROPY, device=device, dtype=torch.float32)).detach())
             #  print("1", alpha_loss_single)
@@ -150,15 +170,30 @@ if __name__ == '__main__':
         alpha_optim.step()
 
         # critic_loss = critic_loss.detach().numpy()
-        critic_loss = critic_loss.item()
+        """critic_loss = critic_loss.item()
         gen_objective = gen_objective.item()
-        alpha_loss = alpha_loss.item()
-        writer.add_scalar("CRITIC LOSS", critic_loss, i)
-        writer.add_scalar("GEN LOSS", gen_objective, i)
-        writer.add_scalar("ALPHA LOSS", alpha_loss, i)
+        alpha_loss = alpha_loss.item()"""
 
+        # loss function visualable
+
+        writer.add_scalar("CRITIC LOSS", critic_loss, p)
+        writer.add_scalar("GEN LOSS", gen_objective, p)
+        # writer.add_scalar("ALPHA LOSS", alpha_loss, p)
+    writer.close()
+    # Compare result visualization
+    plt.plot(RAN_VALUE_LIST, color="red")
+    plt.plot(VALUE_ESTIMATE_LIST, color="green")  # Use Tensor.cpu() to copy the tensor to host memory first.
+    plt.xlabel(' Train Epoch')
+    plt.ylabel('Iteration Numbers')
+    plt.legend(['normal RRTConnect', 'RRTConnect with APES'])
+    plt.show()
+    # here can add compare with compartor , variant can add VALUE_ESTIMATE as number of iterations, but still need
+    # add rrt_random in for i in range(0, BUFFER_MAX): to get other num_iterations
     torch.save(critic_model, 'net.critic')
     torch.save(gen_model, 'net.generator')
 
-    writer.close()
-    # tensorboard --logdir=/home/wangkaige/Project/apes/LOSS_FUNCTION
+    # tensorboard --logdir=/home/wang_ujsjo/Praktikum/apes/Loss_Function or
+
+    # tensorboard --logdir /home/wang_ujsjo/Praktikum/apes/Loss_Function
+
+# modified can be saved 08.03,23

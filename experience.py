@@ -1,6 +1,4 @@
-from Dist_gen import *
 from mp2d.scripts.planning import *
-import matplotlib.pyplot as plt
 import numpy as np
 
 try:
@@ -20,17 +18,9 @@ except ImportError:
     from ompl import geometric as og
 
 
-links = [0.5, 0.5]
-dof = 2
-ma = manipulator(dof, links)
-pl = Planning(ma)
-planning_range_max = np.array([np.pi, np.pi])
-planning_range_min = np.array([-np.pi, -np.pi])
-pl_env = Planning(ma, planning_range_max, planning_range_min, resolution=0.05)
 
 
 class MyValidStateSampler(ob.ValidStateSampler):
-
     def __init__(self, si, gmm_dist):
         super(MyValidStateSampler, self).__init__(si)
         self.name_ = "aaa"
@@ -46,26 +36,26 @@ class MyValidStateSampler(ob.ValidStateSampler):
         self.count += 1
         if self.count > self.max_count:
             self.max_count = self.count
-        print(self.max_count)
+
+        # print("I am here in sampler")
+
         return True
 
     def get_count_max(self):
         return self.max_count
 
+    # This function is needed, even when we can write a sampler like the one
+    # above, because we need to check path segments for validity
+    # def isStateValid(self, state):
+    #     obstacles = self.pl_req.obstacles
+    #     is_valid = pl_env.manipulator.check_validity(state, obstacles)
+    #     return is_valid
+
     def __call__(self, _):
         return self
 
 
-# This function is needed, even when we can write a sampler like the one
-# above, because we need to check path segments for validity
-
-def isStateValid(state):
-    obstacles = pl_req.obstacles
-    is_valid = pl_env.manipulator.check_validity(state, obstacles)
-    return is_valid
-
-
-def plan():
+def plan(pl_req, gmm_dist):
     # construct the state space we are planning in
     space = ob.RealVectorStateSpace(2)
 
@@ -76,6 +66,18 @@ def plan():
     space.setBounds(bounds)
     # define a simple setup class
     ss = og.SimpleSetup(space)
+    links = [0.5, 0.5]
+    dof = 2
+    ma = manipulator(dof, links)
+    planning_range_max = np.array([np.pi, np.pi])
+    planning_range_min = np.array([-np.pi, -np.pi])
+    pl_env = Planning(ma, planning_range_max, planning_range_min, resolution=0.05)
+
+    def isStateValid(state):
+        obstacles = pl_req.obstacles
+        is_valid = pl_env.manipulator.check_validity(state, obstacles)
+        return is_valid
+
     # set state validity checking for this space
     ss.setStateValidityChecker(ob.StateValidityCheckerFn(isStateValid))
     # create a start state
@@ -90,7 +92,7 @@ def plan():
     ss.setStartAndGoalStates(start, goal)
     # set sampler (optional; the default is uniform sampling)
     si = ss.getSpaceInformation()
-    sampler = MyValidStateSampler(si)
+    sampler = MyValidStateSampler(si, gmm_dist)
     # use my sampler
     si.setValidStateSamplerAllocator(ob.ValidStateSamplerAllocator(sampler))
     # create a planner for the defined space
@@ -101,37 +103,37 @@ def plan():
     solution_path = ss.getSolutionPath()
     ompl_solution = list(solution_path.getStates())
     solution = []
-    max_count = sampler.get_count_max()
-    print("maxcount:", max_count)
+    # print("maxcount:", max_count)
     for state in ompl_solution:
         np_state = np.zeros(2)
         np_state[0] = state[0]
         np_state[1] = state[1]
         solution.append(np_state)
-
     if solved:
         print("Found solution:")
         # print the path to screen
-        print(ss.getSolutionPath())
-        print(solution)
-        _, ax = plt.subplots(1, 1)
-        """ax.scatter(samples[:, 0], samples[:, 1], s=1)
-        px = [node[0] for node in mean]
-        py = [node[1] for node in mean]
-        ax.scatter(px, py, color="red", s=10)"""
-        ax.scatter(req.start[0], req.start[1], color="green", s=60)
-        ax.scatter(req.goal[0], req.goal[1], color="blue", s=60)
-        obstacles_space = pl.get_obstacle_space(req)
-        obst_space_x = [ns[0] for ns in obstacles_space]
-        obst_space_y = [ns[1] for ns in obstacles_space]
-        ax.scatter(obst_space_x, obst_space_y, c="r", s=1)
-        x = [ns[0] for ns in solution]
-        y = [ns[1] for ns in solution]
-        plt.plot(x, y)
-        plt.show()
+        # print(ss.getSolutionPath())
+
     else:
         print("No solution found")
 
+    return sampler.get_count_max(), solution
 
-if __name__ == '__main__':
-    plan()
+
+"""
+_, ax = plt.subplots(1, 1)
+ax.scatter(samples[:, 0], samples[:, 1], s=1)
+px = [node[0] for node in mean]
+py = [node[1] for node in mean]
+ax.scatter(px, py, color="red", s=10)
+ax.scatter(req.start[0], req.start[1], color="green", s=60)
+ax.scatter(req.goal[0], req.goal[1], color="blue", s=60)
+obstacles_space = pl.get_obstacle_space(req)
+obst_space_x = [ns[0] for ns in obstacles_space]
+obst_space_y = [ns[1] for ns in obstacles_space]
+ax.scatter(obst_space_x, obst_space_y, c="r", s=1)
+x = [ns[0] for ns in solution]
+y = [ns[1] for ns in solution]
+plt.plot(x, y)
+plt.show()"""
+

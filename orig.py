@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 # Author: Mark Moll
 
 try:
@@ -13,7 +12,8 @@ except ImportError:
     from os.path import abspath, dirname, join
     import sys
 
-    sys.path.insert(0, join(dirname(dirname(abspath(__file__))), 'py-bindings'))
+    sys.path.insert(0, join(dirname(dirname(abspath(__file__))), '/home/wang_ujsjo/Praktikum/mp2d/ompl-1.5.2/py'
+                                                                 '-bindings'))
     from ompl import util as ou
     from ompl import base as ob
     from ompl import geometric as og
@@ -60,6 +60,7 @@ class MyValidStateSampler(ob.ValidStateSampler):
             state[0] = self.rng_.uniformReal(-1, 1)
             state[1] = self.rng_.uniformReal(-1, 1)
         state[2] = z
+        print("Hi fcker")
         return True
 
 
@@ -130,23 +131,23 @@ def plan(samplerIndex):
         si.setValidStateSamplerAllocator(ob.ValidStateSamplerAllocator(allocMyValidStateSampler))
 
     # create a planner for the defined space
-    planner = og.PRM(si)
+    planner = og.RRTConnect(si)
     ss.setPlanner(planner)
 
     # attempt to solve the problem within ten seconds of planning time
     solved = ss.solve(10.0)
-    if solved:
-        print("Found solution:")
-        # print the path to screen
-        print(ss.getSolutionPath())
-    else:
-        print("No solution found")
+    # if solved:
+    #     print("Found solution:")
+    #     # print the path to screen
+    #     # print(ss.getSolutionPath())
+    # else:
+    #     print("No solution found")
 
 
 if __name__ == '__main__':
     print("Using default uniform sampler:")
-    plan(0)
-    print("\nUsing obstacle-based sampler:")
-    plan(1)
-    print("\nUsing my sampler:")
     plan(2)
+    # print("\nUsing obstacle-based sampler:")
+    # plan(1)
+    # print("\nUsing my sampler:")
+    # plan(2)

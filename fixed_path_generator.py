@@ -1,6 +1,7 @@
-import numpy as np
-import torch
 
+import torch
+import numpy as np
+import random
 from mp2d.scripts.rrt_connect import RRTConnect
 from mp2d.scripts.utilities import PlanningResult, load_planning_req_dataset
 from mp2d.scripts.planning import Planning
@@ -39,10 +40,11 @@ def plan_with_rrt_connect(pl_req, ):
     return pr_rrt_connect
 
 
-for i in range(50):
-    pl_req_file_name = "/home/wangkaige/Project/apes/easy_pl_req_250_nodes.json"
+for i in range(10):
+    pl_req_file_name = "/home/wang_ujsjo/Praktikum/apes/easy_pl_req_250_nodes.json"
     planning_requests = load_planning_req_dataset(pl_req_file_name)
-    pl_req = planning_requests[i+300]
+    random_idx = torch.randint(low=0, high=4500, size=(1, )).item()
+    pl_req = planning_requests[i+random_idx]
     path = plan_with_rrt_connect(pl_req)
     solution = np.array(path.solution_path)
     solution = torch.tensor(solution)
@@ -56,8 +58,6 @@ for i in range(50):
 mean = torch.cat(mean, dim=0)
 
 print(mean.shape)
-
-
 torch.save(fixed_path_idx, "fixed_path_new")
 torch.save(mean, "mean_new")
 

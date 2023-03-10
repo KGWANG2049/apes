@@ -40,7 +40,7 @@ def plan_with_rrt_connect(pl_req, ):
     return pr_rrt_connect
 
 
-for i in range(10):
+for i in range(50):
     pl_req_file_name = "/home/wang_ujsjo/Praktikum/apes/easy_pl_req_250_nodes.json"
     planning_requests = load_planning_req_dataset(pl_req_file_name)
     random_idx = torch.randint(low=0, high=4500, size=(1, )).item()

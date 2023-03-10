@@ -4,8 +4,8 @@ import torch.nn as nn
 import numpy as np
 from torch.distributions.dirichlet import Dirichlet
 
-# def LeakyReLU(x, x_max=1, hard_slope=1e-2):
-# return (x <= x_max) * x + (x > x_max) * (x_max + hard_slope * (x - x_max))
+def LeakyReLU(x, x_max=1, hard_slope=1e-2):
+  return (x <= x_max) * x + (x > x_max) * (x_max + hard_slope * (x - x_max))
 
 
 class APESCriticNet(nn.Module):
@@ -16,7 +16,7 @@ class APESCriticNet(nn.Module):
         self.conv2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.LeakyReLU = torch.nn.LeakyReLU()
-        self.fc1 = nn.Linear(590, 200)  # 1728改为1728+start+goal
+        self.fc1 = nn.Linear(630, 200)  # 1728改为1728+start+goal
         self.fc2 = nn.Linear(200, 200)
         self.fc3 = nn.Linear(200, 200)
         self.fc4 = nn.Linear(200, 2)
@@ -60,10 +60,10 @@ class APESGeneratorNet(nn.Module):
         self.conv2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.conv3 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=2, stride=1, padding=0)
         self.LeakyReLU = torch.nn.LeakyReLU()
-        self.fc1 = nn.Linear(580, 200)  # 1728改为1728+start+goal
+        self.fc1 = nn.Linear(580, 200)
         self.fc2 = nn.Linear(200, 200)
         self.fc3 = nn.Linear(200, 200)
-        self.fc4 = nn.Linear(200, 10)
+        self.fc4 = nn.Linear(200, 50)
 
     def forward(self, x, s, g):
         x = self.conv1(x)

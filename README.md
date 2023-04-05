@@ -82,20 +82,41 @@ https://ompl.kavrakilab.org/installation.html
 
 ## Structure
 
-说明如何使用该项目，可以包括安装、配置、使用说明和示例代码等。这一部分应该尽可能详细，以便新用户可以快速上手。
+>It's the overall structure of APES, which has five important working parts(fig.2)
 
-## 结论
+<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/frame%20work.jpg" width="50%" height="50%"> Figure2
+</div><br><br>
 
-总结该项目的一些结果，可以包括项目的收获、成果和不足之处。还可以列出该项目的未来规划和改进方向。
+>1. Generator(Fig.3) accepts instance and output fifty weights: coefficients Wi.
+>2. Assign coefficients Wi as weights to the 50 paths to form GMM. 50 paths have been prepared.(Fig.4)
+>3. transfer the gmm to planner, The planner can sample based on GMM, when planner successful planning a path, the total number of planner iterations is defined as the performance of the planner, in this paper (called value) and planner output value Vi to critic.
+>4. Through learning, the critic can estimate the value Vi: and out put value estimate V^.(Fig.5)
+>5. The critic passes the gradient information of value estimate to the generator, Through gradient information of value estimate V^, the generator can be optimized to output better coefficients in order to get a better GMM.(Fig.6)
 
-## 贡献者
+<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/Gen%20NN.jpg" width="50%" height="50%"> Figure3
+</div><br><br>
 
-列出该项目的贡献者，感谢他们的付出和贡献。可以包括他们的 GitHub 链接或其他联系方式。
+<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/GMM.jpg" width="50%" height="50%"> Figure4
+</div><br><br>
 
-## 许可证
+<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/Critic%20NN.jpg" width="50%" height="50%"> Figure5
+</div><br><br>
 
-说明该项目的许可证信息，以及如何使用该项目的代码、文档和其他资源。可以包括版权信息和授权说明。
+<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/appro.jpg" width="50%" height="50%"> Figure6
+</div><br><br>
+## conclusion
 
-## 联系我们
+>In APES, the critic transfers the gradient information of the planner's VALUE to the generator, and then the generator can learn effectively and generate an effective GMM distribution.
 
-如果您对该项目有任何疑问、建议或反馈，请在此部分提供联系方式，以便与开发团队进行沟通。可以包括电子邮件、Slack、论坛等等。
+<div align=center>
+<img src="<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/6.png" width="50%" height="50%"> result
+</div>" width="50%" height="50%">
+</div>
+
+

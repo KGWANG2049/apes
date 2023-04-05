@@ -1,24 +1,5 @@
-
-
-
-
-
-The network_2d and APES_2D_train are used to test the performance of the 3D occupancy map simplified to 2D in the paper, 
-after which the training set and model will be updated for 3D.
-
-
-The re-parametric sampling implementation method can be found in:
-
-https://arxiv.org/abs/2011.03813
-
-note:https://sprout-cheque-498.notion.site/Algorithms-38558127bfd54a6da52fe0b28728ec31
-
-# Reproduction：AdaPtive Experience Sampling(APES)
-
-
-
-Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token=gfMcjybRnTQAAAAA:rXl2teqGPw082-Gvvm-dPBdQwPHDywXZkqGmaXp47neKSJKcbL-PXTCzux-iGJ0foba35-YC
-
+# Reproduction：AdaPtive Experience Sampling(APES)<br>
+Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token=gfMcjybRnTQAAAAA:rXl2teqGPw082-Gvvm-dPBdQwPHDywXZkqGmaXp47neKSJKcbL-PXTCzux-iGJ0foba35-YC<br><br>
 >Based on the method of this article, we perform motion planning in two-dimensional space with the aim of generating a better sampling distribution to optimize the performance of the RRTConnect sampler(based on OMPL). 
 
 ## Table of Contents
@@ -28,14 +9,12 @@ Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token
 - [如何使用](#如何使用)
 - [结论](#结论)
 
-## Background
-
-When a planner work baesd on RRTConnect, random sampling is an important part in this planner, Higher quality sampling can improve planner performance.because higher quality sampling enables the planner to find solution path with fewer iterations.When we know the instance of the robotic arm (start point, target point, and occupancy grid) we can transform the instance into the joint space (Figure 1)
-<div style="text-align:center">
-  <img src="图片路径" alt="图片描述" width="宽度">
-</div>
-
-
+## Background<br>
+>When a planner work baesd on RRTConnect, random sampling is an important part in this planner, Higher quality sampling can improve planner performance.because higher quality sampling enables the planner to find solution path with fewer iterations.When we know the instance of the robotic arm (start point, target point, and occupancy grid) we can transform the instance into the joint space (Figure 1)<br><br>
+<div align=center>
+<img src="https://github.com/KGWANG2049/apes/blob/main/png/obstacle.jpg" width="50%" height="50%">Figure1 — Instance in joint space
+</div><br><br>
+>the green area is clearly a better region to sample, so the problem is how to find the sutiable region, and make the region have a higher sampling probability than the other regions. When we give start, endpoint and the obstacle to APES, APES can generate this distribution, which is a Gaussian mixture model(GMM).
 
 ## Installation
 Environment:
@@ -45,8 +24,60 @@ Install Ubuntu 20.04
 Install miniconda
 
 Install Nvidia-Cuda
+1. Clean up the environment:
+```sudo rm /etc/apt/sources.list.d/cuda*
+sudo apt remove --autoremove nvidia-cuda-toolkit
+sudo apt remove --autoremove nvidia-*
+sudo rm -rf /usr/local/cuda*
+sudo apt-get purge nvidia*
+sudo apt-get update
+sudo apt-get autoremove
+sudo apt-get autoclean
+sudo apt-key del 7fa2af80
+```
+2. Get Current Cuda - Example code - For actual version: 
+```https://developer.nvidia.com/cuda-downloads``` 
+can find
+```wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget https://developer.download.nvidia.com/compute/cuda/11.7.0/local_installers/cuda-repo-ubuntu2004-11-7-local_11.7.0-515.43.0
+sudo dpkg -i cuda-repo-ubuntu2004-11-7-local_11.7.0-515.43.04-1_amd64.deb
+sudo cp /var/cuda-repo-ubuntu2004-11-7-local/cuda-*-keyring.gpg /usr/share/keyrings/
+sudo apt-get update
+sudo apt-get -y install cuda
+```
 
-描述项目的具体结构，可以包括文件和文件夹的布局、项目中包含的组件、模块、库等等。此外，还可以描述项目的开发进度和项目的未来规划。
+3. Reboot
+
+Setup PyTorch environment
+
+1. Create a virtual environment for pytorch using conda
+Remove the old environment if needed
+```
+conda remove --name pytorch_env
+conda create -n pytorch_env -c pytorch pytorch=1.11 torchvision python=3.9
+```
+2. Activate the virtual environment
+```
+conda activate pytorch_env
+```
+3. Install the torch_geometric
+```
+conda install pyg -c pyg # -c for --channel
+```
+4. Test the installation in the python
+```
+python
+from torch_geometric.data import Data
+```
+5. Install stable_baselines3, 1.6.1
+```
+https://spinningup.openai.com/en/latest/user/installation.html
+```
+6. install OMPL
+```
+https://ompl.kavrakilab.org/installation.html
+```
 
 ## 如何使用
 

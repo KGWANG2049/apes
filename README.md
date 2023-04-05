@@ -15,24 +15,36 @@ note:https://sprout-cheque-498.notion.site/Algorithms-38558127bfd54a6da52fe0b287
 
 # Reproduction：AdaPtive Experience Sampling(APES)
 
-  Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token=gfMcjybRnTQAAAAA:rXl2teqGPw082-Gvvm-dPBdQwPHDywXZkqGmaXp47neKSJKcbL-PXTCzux-iGJ0foba35-YC
 
-  Based on the method of this article, we perform motion planning in two-dimensional space with the aim of generating a better sampling distribution to optimize the performance of the RRTConnect sampler(based on OMPL). 
+
+Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token=gfMcjybRnTQAAAAA:rXl2teqGPw082-Gvvm-dPBdQwPHDywXZkqGmaXp47neKSJKcbL-PXTCzux-iGJ0foba35-YC
+
+>Based on the method of this article, we perform motion planning in two-dimensional space with the aim of generating a better sampling distribution to optimize the performance of the RRTConnect sampler(based on OMPL). 
 
 ## Table of Contents
 
 - [Background](#background)
-- [具体结构](#具体结构)
+- [Installation](#installation)
 - [如何使用](#如何使用)
 - [结论](#结论)
 
 ## Background
 
 When a planner work baesd on RRTConnect, random sampling is an important part in this planner, Higher quality sampling can improve planner performance.because higher quality sampling enables the planner to find solution path with fewer iterations.When we know the instance of the robotic arm (start point, target point, and occupancy grid) we can transform the instance into the joint space (Figure 1)
-![instance in joint space]( "图片标题")
+<div style="text-align:center">
+  <img src="图片路径" alt="图片描述" width="宽度">
+</div>
 
 
-## 具体结构
+
+## Installation
+Environment:
+
+Install Ubuntu 20.04
+
+Install miniconda
+
+Install Nvidia-Cuda
 
 描述项目的具体结构，可以包括文件和文件夹的布局、项目中包含的组件、模块、库等等。此外，还可以描述项目的开发进度和项目的未来规划。
 

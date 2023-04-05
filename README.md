@@ -14,6 +14,7 @@ Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token
 <div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/obstacle.jpg" width="50%" height="50%">Figure1 — Instance in joint space
 </div><br><br>
+
 >the green area is clearly a better region to sample, so the problem is how to find the sutiable region, and make the region have a higher sampling probability than the other regions. When we give start, endpoint and the obstacle to APES, APES can generate this distribution, which is a Gaussian mixture model(GMM).
 
 ## Installation
@@ -79,7 +80,7 @@ https://spinningup.openai.com/en/latest/user/installation.html
 https://ompl.kavrakilab.org/installation.html
 ```
 
-## 如何使用
+## Structure
 
 说明如何使用该项目，可以包括安装、配置、使用说明和示例代码等。这一部分应该尽可能详细，以便新用户可以快速上手。
 

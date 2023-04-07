@@ -17,6 +17,8 @@ planning_requests = load_planning_req_dataset(pl_req_file_name)
 
 
 def gmm_ran_compartor(start_num, goal_num):
+    num_count_ran = 0 
+    num_count_gmm = 0
     for i in range(start_num, goal_num):
         pl_req = planning_requests[i]
         oc = pl.get_occupancy_map(pl_req)
@@ -44,5 +46,4 @@ if __name__ == '__main__':
     _, ax = plt.subplots(1, 1)
     ax.scatter(0, ncr, color="bluegreen", s=60)
     ax.scatter(0, ncg, color="green", s=60)
-
     plt.show()

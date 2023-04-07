@@ -6,7 +6,7 @@ Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token
 
 - [Background](#background)
 - [Installation](#installation)
-- [How to use](#how to use)
+- [Using](#using)
 - [Conclusion](#conclusion)
 
 
@@ -81,10 +81,6 @@ https://spinningup.openai.com/en/latest/user/installation.html
 https://ompl.kavrakilab.org/installation.html
 ```
 
-## How to use
-
-
-
 ## Structure
 
 >It's the overall structure of APES, which has five important working parts(fig.2)
@@ -114,6 +110,12 @@ https://ompl.kavrakilab.org/installation.html
 <div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/appro.jpg" width="50%" height="50%"> Figure6
 </div><br><br>
+
+## using
+We need [planning.py](https://github.com/Xi-HHHM/mp2d/tree/gmm/scripts) and [utilities.py](https://github.com/Xi-HHHM/mp2d/tree/gmm/scripts) Thanks my supervisor  [__Xi-Huang__](https://github.com/Xi-HHHM) for guiding and for the functions available in planning and utilities.<br><br>
+
+>Using train.py to train the neural network generator and critic, and their instantiations are in model.py.
+
 
 ## conclusion
 

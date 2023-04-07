@@ -6,8 +6,9 @@ Original paper: https://ieeexplore.ieee.org/abstract/document/9832486?casa_token
 
 - [Background](#background)
 - [Installation](#installation)
-- [如何使用](#如何使用)
-- [结论](#结论)
+- [How to use](#how to use)
+- [Conclusion](#conclusion)
+
 
 ## Background<br>
 >When a planner work baesd on RRTConnect, random sampling is an important part in this planner, Higher quality sampling can improve planner performance.because higher quality sampling enables the planner to find solution path with fewer iterations.When we know the instance of the robotic arm (start point, target point, and occupancy grid) we can transform the instance into the joint space (Figure 1)<br><br>
@@ -80,6 +81,10 @@ https://spinningup.openai.com/en/latest/user/installation.html
 https://ompl.kavrakilab.org/installation.html
 ```
 
+## How to use
+
+
+
 ## Structure
 
 >It's the overall structure of APES, which has five important working parts(fig.2)
@@ -89,34 +94,33 @@ https://ompl.kavrakilab.org/installation.html
 </div><br><br>
 
 >1. Generator(Fig.3) accepts instance and output fifty weights: coefficients Wi.
->2. Assign coefficients Wi as weights to the 50 paths to form GMM. 50 paths have been prepared.(Fig.4)
->3. transfer the gmm to planner, The planner can sample based on GMM, when planner successful planning a path, the total number of planner iterations is defined as the performance of the planner, in this paper (called value) and planner output value Vi to critic.
->4. Through learning, the critic can estimate the value Vi: and out put value estimate V^.(Fig.5)
->5. The critic passes the gradient information of value estimate to the generator, Through gradient information of value estimate V^, the generator can be optimized to output better coefficients in order to get a better GMM.(Fig.6)
-
 <div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/Gen%20NN.jpg" width="50%" height="50%"> Figure3
 </div><br><br>
 
+>2. Assign coefficients Wi as weights to the 50 paths to form GMM. 50 paths have been prepared.(Fig.4)
 <div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/GMM.jpg" width="50%" height="50%"> Figure4
 </div><br><br>
+
+>3. transfer the gmm to planner, The planner can sample based on GMM, when planner successful planning a path, the total number of planner iterations is defined as the performance of the planner, in this paper (called value) and planner output value Vi to critic.<br>
+>4. Through learning, the critic can estimate the value Vi: and out put value estimate V^.(Fig.5)
 
 <div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/Critic%20NN.jpg" width="50%" height="50%"> Figure5
 </div><br><br>
 
+>5. The critic passes the gradient information of value estimate to the generator, Through gradient information of value estimate V^, the generator can be optimized to output better coefficients in order to get a better GMM.(Fig.6)
 <div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/appro.jpg" width="50%" height="50%"> Figure6
 </div><br><br>
+
 ## conclusion
 
 >In APES, the critic transfers the gradient information of the planner's VALUE to the generator, and then the generator can learn effectively and generate an effective GMM distribution.
 
 <div align=center>
-<img src="<div align=center>
 <img src="https://github.com/KGWANG2049/apes/blob/main/png/6.png" width="50%" height="50%"> result
-</div>" width="50%" height="50%">
 </div>
 
 

@@ -114,12 +114,14 @@ https://ompl.kavrakilab.org/installation.html
 ## using
 We need [planning.py](https://github.com/Xi-HHHM/mp2d/tree/gmm/scripts) and [utilities.py](https://github.com/Xi-HHHM/mp2d/tree/gmm/scripts) Thanks my supervisor  [__Xi-Huang__](https://github.com/Xi-HHHM) for guiding and for the functions available in planning and utilities.<br><br>
 
->Using [train.py](https://github.com/KGWANG2049/apes/blob/main/train.py) to train the neural network generator and critic, which are instantiated in [model.py](https://github.com/KGWANG2049/apes/blob/main/model.py)
+>Using [train.py](https://github.com/KGWANG2049/apes/blob/main/train.py) to train the neural network generator and critic, which are instantiated in [model.py](https://github.com/KGWANG2049/apes/blob/main/model.py)<br>following are Hyperparameter experience:
 > 1. After initialization, the entropy of GMM is about -144.6, so the target entropy should be smaller than it (recommended -180 ~ -230).<br>
 > 2. A larger batchsize leads to more stable convergence of the generator (GMM entropy changes more slowly), and Epoch can be increased appropriately.<br>
 > 3. If 2. leads to too long computation time, the entropy regularization factor log_alpha can be reduced appropriately (e.g., use -12 instead of -8).<br>
-> 4. Learning rate: 1e-4 ~ 6e-4 is appropriate.<br><br>
+> 4. Learning rate: 1e-4 ~ 5e-4 is appropriate.<br><br>
 
+>[gmm_rrtc_sampler.py](https://github.com/KGWANG2049/apes/blob/main/gmm_rrtc_sampler.py) and [rand_rrtc_planner.py](https://github.com/KGWANG2049/apes/blob/main/rand_rrtc_planner.py) are provided under the mixed Gaussian model and under random.uniform, respectively, and they both use the RRTConnect method.
+Using [compartor.py](https://github.com/KGWANG2049/apes/blob/main/compartor.py) can see the performance comparison of the two planners under a testset.
 
 ## conclusion
 

@@ -114,7 +114,7 @@ https://ompl.kavrakilab.org/installation.html
 ## using
 We need [planning.py](https://github.com/Xi-HHHM/mp2d/tree/gmm/scripts) and [utilities.py](https://github.com/Xi-HHHM/mp2d/tree/gmm/scripts) Thanks my supervisor  [__Xi-Huang__](https://github.com/Xi-HHHM) for guiding and for the functions available in planning and utilities.<br><br>
 
->Using train.py to train the neural network generator and critic, and their instantiations are in model.py.
+>Using [train.py](https://github.com/KGWANG2049/apes/blob/main/train.py) to train the neural network generator and critic, which are instantiated in [model.py](https://github.com/KGWANG2049/apes/blob/main/model.py)
 
 
 ## conclusion
